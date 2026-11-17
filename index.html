@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ann Arbor in 3D</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+  <div id="map" aria-label="3D map of Ann Arbor, Michigan"></div>
+
+  <aside id="panel">
+    <header>
+      <div>
+        <p class="eyebrow">Michigan · 42.28°N 83.74°W</p>
+        <h1>Ann Arbor <span>in 3D</span></h1>
+      </div>
+      <button id="collapse" aria-expanded="true" aria-controls="panel-body" title="Show or hide panel">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </header>
+
+    <div id="panel-body">
+      <div class="segmented" role="group" aria-label="Lighting">
+        <button data-mode="day" class="active">Day</button>
+        <button data-mode="dusk">Dusk</button>
+        <button data-mode="night">Night</button>
+      </div>
+
+      <div class="toggles" role="group" aria-label="Layers">
+        <button data-toggle="buildings" aria-pressed="true">3D buildings</button>
+        <button data-toggle="terrain" aria-pressed="true">Terrain</button>
+        <button data-toggle="labels" aria-pressed="true">Labels</button>
+        <button data-toggle="cars" aria-pressed="true">Cars</button>
+        <button data-toggle="orbit" aria-pressed="false">Orbit</button>
+      </div>
+
+      <section>
+        <h2 class="section">Find places</h2>
+        <div id="filters" class="filters" role="group" aria-label="Place categories"></div>
+      </section>
+
+      <section id="results-wrap">
+        <div class="results-head">
+          <h2 class="section" id="results-count" aria-live="polite">In view</h2>
+          <button id="clear-filters" type="button" hidden>Clear filters</button>
+        </div>
+        <ul id="results"></ul>
+        <p id="results-empty">Pick a category to drop pins on the map.</p>
+      </section>
+
+      <p class="hint">Drag to pan · right-drag or ctrl-drag to tilt and rotate · scroll to zoom · click a pin to review it · click a building to name it</p>
+    </div>
+  </aside>
+
+  <button id="reset" title="Back to the overview">Overview</button>
+
+  <dialog id="review-dialog" aria-labelledby="review-title">
+    <form id="review-form" novalidate>
+      <div>
+        <p class="kicker" id="review-kicker">Your review</p>
+        <h2 id="review-title">Restaurant</h2>
+      </div>
+
+      <fieldset>
+        <legend class="field">Overall rating</legend>
+        <div class="star-row">
+          <input type="radio" name="stars" value="5" id="star-5"><label for="star-5" title="5 stars">★<span class="sr">5 stars</span></label>
+          <input type="radio" name="stars" value="4" id="star-4"><label for="star-4" title="4 stars">★<span class="sr">4 stars</span></label>
+          <input type="radio" name="stars" value="3" id="star-3"><label for="star-3" title="3 stars">★<span class="sr">3 stars</span></label>
+          <input type="radio" name="stars" value="2" id="star-2"><label for="star-2" title="2 stars">★<span class="sr">2 stars</span></label>
+          <input type="radio" name="stars" value="1" id="star-1"><label for="star-1" title="1 star">★<span class="sr">1 star</span></label>
+        </div>
+        <p id="review-error" class="error" hidden>Pick a star rating.</p>
+      </fieldset>
+
+      <label class="field">Visited
+        <input type="date" name="visited">
+      </label>
+      <label class="field">Food
+        <textarea name="food" rows="3" maxlength="2000" placeholder="What did you order? How was it?"></textarea>
+      </label>
+      <label class="field">Atmosphere
+        <textarea name="atmosphere" rows="3" maxlength="2000" placeholder="Vibe, noise, decor, seating…"></textarea>
+      </label>
+      <label class="field">Service
+        <textarea name="service" rows="3" maxlength="2000" placeholder="Friendly? Quick? Attentive?"></textarea>
+      </label>
+
+      <div class="actions end">
+        <button type="button" class="btn" id="review-cancel">Cancel</button>
+        <button type="submit" class="btn primary">Save review</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="app.js?v=4"></script>
+</body>
+</html>

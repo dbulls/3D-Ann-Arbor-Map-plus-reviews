@@ -1,0 +1,24 @@
+# Your personal reviews and building names (written by server.py)
+data/
+*.tmp
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Secrets, in case any are added later
+.env
+.env.*
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# macOS / editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
