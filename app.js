@@ -12,7 +12,7 @@ const P = {
   bg: '#ebe7de', urban: '#e6e1d7', campus: '#efe6cf', wood: '#bcd6a6', grass: '#d3e3bd',
   park: '#c5dfae', pitch: '#b5d69c', water: '#8fbfe0', waterway: '#8fbfe0',
   path: '#c9bfae', minor: '#ffffff', major: '#fff1b8', motorway: '#f6c35f', rail: '#a9a39a',
-  bldg: ['#f4f1ea', '#e6dcc8', '#9fb4cc', '#2f5f93'], hover: '#ffcb05',
+  bldg: ['#f4f1ea', '#e6dcc8', '#9fb4cc', '#2f5f93'],
   label: '#22303f', halo: 'rgba(255,255,255,0.9)', roadLabel: '#5b6470',
   shade: '#5a4a3a', highlight: '#ffffff',
   sky: { 'sky-color': '#7fb2e6', 'horizon-color': '#dfeaf5', 'fog-color': '#e6ebee' },
@@ -83,22 +83,13 @@ function buildLayers(p) {
           ['interpolate', ['linear'], HEIGHT, 0, p.bldg[0], 12, p.bldg[1], 35, p.bldg[2], 90, p.bldg[3]],
         'fill-extrusion-height': HEIGHT,
         'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-        'fill-extrusion-vertical-gradient': true,
-        'fill-extrusion-opacity': 1
+        'fill-extrusion-vertical-gradient': true
       }
     },
     {
       id: 'cars', type: 'fill-extrusion', source: 'cars', minzoom: CAR_MIN_ZOOM,
       paint: {
         'fill-extrusion-color': ['get', 'color'],
-        'fill-extrusion-height': ['get', 'h'],
-        'fill-extrusion-base': ['get', 'b']
-      }
-    },
-    {
-      id: 'building-hover', type: 'fill-extrusion', source: 'hover',
-      paint: {
-        'fill-extrusion-color': p.hover,
         'fill-extrusion-height': ['get', 'h'],
         'fill-extrusion-base': ['get', 'b']
       }
@@ -144,7 +135,6 @@ function buildStyle(p) {
       omt: { type: 'vector', url: 'https://tiles.openfreemap.org/planet' },
       dem: dem(),
       'dem-shade': dem(), // separate source: sharing one between terrain and hillshade degrades both
-      hover: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       cars: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
     },
     layers: buildLayers(p),
@@ -888,8 +878,8 @@ function lookupBuilding(outer) {
 
 /* ---------- Building hover + click ---------- */
 // Tile features can bundle several separate buildings under one id, and a building
-// that crosses a tile edge arrives in pieces. So the hover highlight is drawn from
-// the exact polygon under the cursor (plus the rest of that building) in its own layer.
+// that crosses a tile edge arrives in pieces. So the hover tooltip and click card work
+// from the exact polygon under the cursor (plus the rest of that building).
 const tip = el('div', 'tip');
 tip.hidden = true;
 document.body.append(tip);
@@ -920,33 +910,53 @@ function inScreenRing(pt, ring, dy) {
 // The tiles merge many separate buildings of equal height into one feature, so work
 // out which of its polygons the cursor is on: compare the cursor with each polygon's
 // on-screen shape (the roof outline first, then the footprint-to-roof extent).
+// Returns { poly, rank, area } for the best polygon, or null if none is under the cursor.
 function polygonUnderCursor(feature, e) {
-  const polys = polygonsOf(feature);
-  if (polys.length === 1) return polys[0];
   const lat = map.getCenter().lat * Math.PI / 180;
   const pxPerMetre = (512 * 2 ** map.getZoom()) / (40075016.686 * Math.cos(lat));
-  const lift = heightOf(feature) * pxPerMetre * Math.sin(map.getPitch() * Math.PI / 180);
-  const near = 0.006; // degrees; skip polygons nowhere near the cursor before projecting
-  let best = null, bestRank = 0, bestArea = Infinity;
-  for (const poly of polys) {
-    const first = poly[0][0];
-    if (Math.abs(first[0] - e.lngLat.lng) > near || Math.abs(first[1] - e.lngLat.lat) > near) continue;
+  const pitch = Math.min(map.getPitch(), 80) * Math.PI / 180;
+  const lift = heightOf(feature) * pxPerMetre * Math.sin(pitch);
+  // The ground point under the cursor can be behind a building whose wall or roof the
+  // cursor is on, but never further than its height allows. Skip anything beyond that.
+  const reach = 25 + heightOf(feature) * Math.tan(pitch) * 1.2;
+  const canvas = map.getCanvas();
+  const limit = 5 * Math.max(canvas.clientWidth, canvas.clientHeight);
+  let best = null;
+  for (const poly of polygonsOf(feature)) {
+    const box = ringBox(poly[0]);
+    const dx = Math.max(box.minX - e.lngLat.lng, 0, e.lngLat.lng - box.maxX) * M_PER_LNG;
+    const dy = Math.max(box.minY - e.lngLat.lat, 0, e.lngLat.lat - box.maxY) * M_PER_LAT;
+    if (Math.hypot(dx, dy) > reach) continue;
     const screen = poly[0].map((c) => map.project(c));
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const s of screen) {
       minX = Math.min(minX, s.x); maxX = Math.max(maxX, s.x);
       minY = Math.min(minY, s.y); maxY = Math.max(maxY, s.y);
     }
+    // Points behind the camera project to wild coordinates; such a polygon isn't the one.
+    if (minX < -limit || minY < -limit || maxX > limit || maxY > limit) continue;
     const pad = 3;
     const p = e.point;
     if (p.x < minX - pad || p.x > maxX + pad || p.y < minY - lift * 1.3 - pad || p.y > maxY + pad) continue;
     const rank = inScreenRing(p, screen, lift) ? 2 : 1;
     const area = (maxX - minX) * (maxY - minY);
-    if (rank > bestRank || (rank === bestRank && area < bestArea)) {
-      best = poly; bestRank = rank; bestArea = area;
+    if (!best || rank > best.rank || (rank === best.rank && area < best.area)) best = { poly, rank, area };
+  }
+  return best;
+}
+
+// The building under the cursor. The map can report several candidate features at a
+// point (some only near it), so pick the best polygon across all of them.
+function buildingAt(point, lngLat) {
+  if (!map.getLayer('buildings')) return null;
+  let best = null;
+  for (const feature of map.queryRenderedFeatures(point, { layers: ['buildings'] })) {
+    const hit = polygonUnderCursor(feature, { point, lngLat });
+    if (hit && (!best || hit.rank > best.rank || (hit.rank === best.rank && hit.area < best.area))) {
+      best = { feature, poly: hit.poly, rank: hit.rank, area: hit.area };
     }
   }
-  return best || polys[0];
+  return best;
 }
 
 // Every drawn piece that belongs with the hovered polygon. For a building matched to
@@ -1181,23 +1191,16 @@ function afterBuildingChange(lngLat) {
   hoverKey = null;
   rebuildPlaces();
   updateResults();
-  const point = map.project(lngLat);
-  const feature = buildingAt(point);
-  if (!feature) { popup.remove(); return; }
-  const info = describe(feature, polygonUnderCursor(feature, { point, lngLat }));
+  const hit = buildingAt(map.project(lngLat), lngLat);
+  if (!hit) { popup.remove(); return; }
+  const info = describe(hit.feature, hit.poly);
   popup.setDOMContent(buildingCard(info, lngLat));
   fitPopup();
 }
 
-let hoverKey = null;   // building currently highlighted
+let hoverKey = null;   // building currently under the cursor
 let hoverPlace = null; // place pin currently enlarged
 
-function clearBuildingHighlight() {
-  if (hoverKey === null) return;
-  hoverKey = null;
-  const src = map.getSource('hover');
-  if (src) src.setData({ type: 'FeatureCollection', features: [] });
-}
 function setPlaceHover(id, showName) {
   if (!map.getLayer('place-hover')) return;
   if (id === hoverPlace) return;
@@ -1206,7 +1209,7 @@ function setPlaceHover(id, showName) {
   map.setFilter('place-hover', ['==', ['id'], id == null ? -1 : id]);
 }
 function clearHover() {
-  clearBuildingHighlight();
+  hoverKey = null;
   setPlaceHover(null);
   tip.hidden = true;
   map.getCanvas().style.cursor = '';
@@ -1227,14 +1230,12 @@ const placeAt = (point) => {
     [[point.x - 4, point.y - 2], [point.x + 4, point.y + 6]], { layers: ['places'] })[0];
   return hit ? places[hit.id] || null : null;
 };
-const buildingAt = (point) =>
-  (map.getLayer('buildings') ? map.queryRenderedFeatures(point, { layers: ['buildings'] })[0] : null);
 
 map.on('mousemove', (e) => {
   // Place pins sit on top of everything, so they win over the building beneath.
   const place = placeAt(e.point);
   if (place) {
-    clearBuildingHighlight();
+    hoverKey = null;
     map.getCanvas().style.cursor = 'pointer';
     const changed = hoverPlace !== place.id;
     setPlaceHover(place.id, false);
@@ -1243,23 +1244,15 @@ map.on('mousemove', (e) => {
   }
   setPlaceHover(null);
 
-  const feature = buildingAt(e.point);
-  if (!feature) return clearHover();
-  const poly = polygonUnderCursor(feature, e);
+  const hit = buildingAt(e.point, e.lngLat);
+  if (!hit) return clearHover();
+  const { feature, poly } = hit;
   const key = `${feature.id}:${poly[0][0][0]},${poly[0][0][1]}:${poly[0].length}`;
   let info = null;
   if (key !== hoverKey || tip.hidden) {
     hoverKey = key;
     map.getCanvas().style.cursor = 'pointer';
     info = describe(feature, poly);
-    map.getSource('hover').setData({
-      type: 'FeatureCollection',
-      features: info.pieces.map((piece) => ({
-        type: 'Feature',
-        properties: { h: piece.h + 0.3, b: piece.b },
-        geometry: { type: 'Polygon', coordinates: piece.poly }
-      }))
-    });
   }
   showTip(e.point, info ? info.title : null, info ? info.tipLine : null);
 });
@@ -1269,9 +1262,9 @@ map.on('movestart', clearHover);
 map.on('click', (e) => {
   const place = placeAt(e.point);
   if (place) return selectPlace(place, false);
-  const feature = buildingAt(e.point);
-  if (!feature) return;
-  const info = describe(feature, polygonUnderCursor(feature, e));
+  const hit = buildingAt(e.point, e.lngLat);
+  if (!hit) return;
+  const info = describe(hit.feature, hit.poly);
   popup.setLngLat(e.lngLat).setOffset(16).setDOMContent(buildingCard(info, e.lngLat)).addTo(map);
   popup.place = null;
   fitPopup();
