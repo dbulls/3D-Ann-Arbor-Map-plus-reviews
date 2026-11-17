@@ -7,48 +7,23 @@ const TERRAIN = { source: 'dem', exaggeration: 1.8 };
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const CAR_MIN_ZOOM = 14.5; // cars are too small to see below this
 
-/* ---------- Palettes for the three lighting modes ---------- */
-const PALETTES = {
-  day: {
-    bg: '#ebe7de', urban: '#e6e1d7', campus: '#efe6cf', wood: '#bcd6a6', grass: '#d3e3bd',
-    park: '#c5dfae', pitch: '#b5d69c', water: '#8fbfe0', waterway: '#8fbfe0',
-    path: '#c9bfae', minor: '#ffffff', major: '#fff1b8', motorway: '#f6c35f', rail: '#a9a39a',
-    footprint: '#d8d1c4',
-    bldg: ['#f4f1ea', '#e6dcc8', '#9fb4cc', '#2f5f93'], hover: '#ffcb05',
-    label: '#22303f', halo: 'rgba(255,255,255,0.9)', roadLabel: '#5b6470',
-    shade: '#5a4a3a', highlight: '#ffffff',
-    sky: { 'sky-color': '#7fb2e6', 'horizon-color': '#dfeaf5', 'fog-color': '#e6ebee' },
-    light: { anchor: 'map', position: [1.5, 210, 40], color: '#ffffff', intensity: 0.45 }
-  },
-  dusk: { // teal twilight with a coral horizon
-    bg: '#1f3b44', urban: '#23424b', campus: '#2a4a50', wood: '#1d4a41', grass: '#245046',
-    park: '#22503f', pitch: '#2a5c49', water: '#123a5a', waterway: '#123a5a',
-    path: '#3d5d66', minor: '#4a6b74', major: '#f2b880', motorway: '#ff9e6d', rail: '#35525a',
-    footprint: '#2e525c',
-    bldg: ['#5f8791', '#8fb3a8', '#f0c9a0', '#ff8c69'], hover: '#ffcb05',
-    label: '#f2f7f5', halo: 'rgba(15,35,42,0.9)', roadLabel: '#bcd6d2',
-    shade: '#0b1d22', highlight: '#ffd0a8',
-    sky: { 'sky-color': '#1f4f6b', 'horizon-color': '#ffb199', 'fog-color': '#e8a48f' },
-    light: { anchor: 'map', position: [1.5, 285, 70], color: '#ffd2b0', intensity: 0.5 }
-  },
-  night: {
-    bg: '#0b1220', urban: '#0e1626', campus: '#111b2e', wood: '#0c1c1c', grass: '#0e1f1d',
-    park: '#0f2320', pitch: '#11302a', water: '#071a33', waterway: '#0b274a',
-    path: '#1f2c44', minor: '#24324d', major: '#6f6a3c', motorway: '#b0892a', rail: '#1c263a',
-    footprint: '#16233a',
-    bldg: ['#18263f', '#22406b', '#3d6fa8', '#ffcb05'], hover: '#ffffff',
-    label: '#d6e2f2', halo: 'rgba(5,10,20,0.9)', roadLabel: '#8ea3bf',
-    shade: '#000000', highlight: '#1d3050',
-    sky: { 'sky-color': '#040814', 'horizon-color': '#14274a', 'fog-color': '#0b1220' },
-    light: { anchor: 'map', position: [1.5, 30, 50], color: '#8fb4ff', intensity: 0.35 }
-  }
+/* ---------- Colours ---------- */
+const P = {
+  bg: '#ebe7de', urban: '#e6e1d7', campus: '#efe6cf', wood: '#bcd6a6', grass: '#d3e3bd',
+  park: '#c5dfae', pitch: '#b5d69c', water: '#8fbfe0', waterway: '#8fbfe0',
+  path: '#c9bfae', minor: '#ffffff', major: '#fff1b8', motorway: '#f6c35f', rail: '#a9a39a',
+  bldg: ['#f4f1ea', '#e6dcc8', '#9fb4cc', '#2f5f93'], hover: '#ffcb05',
+  label: '#22303f', halo: 'rgba(255,255,255,0.9)', roadLabel: '#5b6470',
+  shade: '#5a4a3a', highlight: '#ffffff',
+  sky: { 'sky-color': '#7fb2e6', 'horizon-color': '#dfeaf5', 'fog-color': '#e6ebee' },
+  light: { anchor: 'map', position: [1.5, 210, 40], color: '#ffffff', intensity: 0.45 }
 };
 
 const skyFor = (p) => Object.assign({
   'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.7, 'fog-ground-blend': 0.55, 'atmosphere-blend': 0
 }, p.sky);
 
-/* ---------- Style layers (rebuilt per palette) ---------- */
+/* ---------- Style layers ---------- */
 const roadWidth = (a, b) => ['interpolate', ['exponential', 1.6], ['zoom'], 11, a, 18, b];
 const classIn = (...classes) => ['in', ['get', 'class'], ['literal', classes]];
 const HEIGHT = ['coalesce', ['get', 'render_height'], 8];
@@ -100,11 +75,6 @@ function buildLayers(p) {
       paint: { 'line-color': p.rail, 'line-width': roadWidth(0.6, 4), 'line-dasharray': [3, 2] }
     },
 
-    {
-      id: 'footprints', type: 'fill', source: 'omt', 'source-layer': 'building', minzoom: 13,
-      layout: { visibility: 'none' },
-      paint: { 'fill-color': p.footprint, 'fill-outline-color': p.bg }
-    },
     {
       id: 'buildings', type: 'fill-extrusion', source: 'omt', 'source-layer': 'building', minzoom: 13,
       filter: ['!=', ['get', 'hide_3d'], true],
@@ -187,7 +157,7 @@ function buildStyle(p) {
 /* ---------- Map ---------- */
 const map = new maplibregl.Map({
   container: 'map',
-  style: buildStyle(PALETTES.day),
+  style: buildStyle(P),
   center: HOME.center,
   zoom: reduceMotion ? HOME.zoom : 12.3,
   pitch: reduceMotion ? HOME.pitch : 20,
@@ -222,73 +192,14 @@ map.on('load', () => {
   goTo(HOME, 5000);
 });
 
-/* ---------- Lighting modes ---------- */
-let mode = 'day';
-let styleReady = false;
-map.once('load', () => { styleReady = true; });
-function setMode(next) {
-  // Paint properties can't be changed until the style has finished loading.
-  // (map.isStyleLoaded() is no use here: the moving cars keep a source busy.)
-  if (!styleReady) { map.once('load', () => setMode(next)); return; }
-  mode = next;
-  const p = PALETTES[next];
-  for (const layer of buildLayers(p)) {
-    for (const [prop, value] of Object.entries(layer.paint || {})) {
-      map.setPaintProperty(layer.id, prop, value);
-    }
-  }
-  map.setSky(skyFor(p));
-  map.setLight(p.light);
-  document.querySelectorAll('.segmented button').forEach((b) =>
-    b.classList.toggle('active', b.dataset.mode === next));
-}
-document.querySelectorAll('.segmented button').forEach((b) =>
-  b.addEventListener('click', () => setMode(b.dataset.mode)));
-
-/* ---------- Layer toggles ---------- */
-const LABEL_LAYERS = ['label-road', 'label-water', 'label-place'];
-const show = (id, on) => map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
-
-let orbiting = false;
-let lastFrame = 0;
-function orbitFrame(t) {
-  if (!orbiting) return;
-  const dt = Math.min(t - lastFrame, 100);
-  lastFrame = t;
-  map.setBearing(map.getBearing() + dt * 0.006);
-  requestAnimationFrame(orbitFrame);
-}
-function setOrbit(on) {
-  orbiting = on;
-  document.querySelector('[data-toggle="orbit"]').setAttribute('aria-pressed', String(on));
-  if (on) {
-    map.stop();
-    lastFrame = performance.now();
-    requestAnimationFrame(orbitFrame);
-  }
-}
-// Any direct interaction with the map hands control back to the user.
-['mousedown', 'touchstart', 'wheel'].forEach((ev) => map.on(ev, () => orbiting && setOrbit(false)));
-
-const TOGGLES = {
-  buildings: (on) => { show('buildings', on); show('building-hover', on); show('footprints', !on); },
-  terrain: (on) => map.setTerrain(on ? TERRAIN : null),
-  labels: (on) => LABEL_LAYERS.forEach((id) => show(id, on)),
-  cars: (on) => { carsOn = on; show('cars', on); },
-  orbit: setOrbit
-};
-document.querySelectorAll('[data-toggle]').forEach((b) =>
-  b.addEventListener('click', () => {
-    const on = b.getAttribute('aria-pressed') !== 'true';
-    b.setAttribute('aria-pressed', String(on));
-    TOGGLES[b.dataset.toggle](on);
-  }));
-
-/* ---------- Your data: reviews and building names ---------- */
+/* ---------- Your data: reviews, places you added, building names ---------- */
 // server.py saves this to data/my-data.json. It is also mirrored in this browser,
 // which is what gets used if the map is served without server.py.
+//   places:    restaurants and bars you added (several can share one building)
+//   buildings: names you gave buildings
+//   reviews:   { placeKey: [review, ...] }
 const LOCAL_KEY = 'aa3d-my-data';
-let userData = { version: 1, reviews: {}, buildings: [] };
+let userData = { version: 2, reviews: {}, places: [], buildings: [] };
 let savingToFile = true;
 
 const toastEl = el('div', 'toast');
@@ -329,7 +240,26 @@ const userDataReady = fetch('/api/data', { cache: 'no-store' })
     const local = readLocal();
     if (validData(local)) userData = local;
     toast('Saving in this browser only. Start the map with "python3 server.py" to save to a file.', 8000);
-  });
+  })
+  .then(() => { if (migrate()) saveUserData(); });
+
+// Version 1 stored a restaurant you added as the building's own name and type, which
+// allowed only one per building. Move each into the places list; its reviews keep
+// the same key, and the building keeps the name you gave it.
+function migrate() {
+  let changed = false;
+  if (!Array.isArray(userData.places)) { userData.places = []; changed = true; }
+  for (const b of userData.buildings) {
+    if (b.kind === 'food' || b.kind === 'bars') {
+      userData.places.push({ id: b.id, name: b.name, kind: b.kind, lng: b.lng, lat: b.lat,
+                             created: b.created, updated: b.updated });
+      delete b.kind;
+      changed = true;
+    }
+  }
+  if (userData.version !== 2) { userData.version = 2; changed = true; }
+  return changed;
+}
 
 let saveChain = Promise.resolve();
 function saveUserData(message) {
@@ -431,9 +361,9 @@ function placesGeoJSON() {
   };
 }
 
-// Restaurants and bars you added by naming a building become places too.
+// Restaurants and bars you added to buildings become places too.
 function rebuildPlaces() {
-  const yours = userData.buildings
+  const yours = userData.places
     .filter((b) => CAT[b.kind])
     .map((b) => ({ name: b.name, cat: b.kind, kind: 'Added by you', lng: b.lng, lat: b.lat,
                    key: `custom:${b.id}`, custom: b }));
@@ -456,7 +386,10 @@ Promise.all([placesData, mapLoaded, userDataReady]).then(([data]) => {
     map.addImage(`pin-${c.id}`, pinImage(c.color, false), { pixelRatio: 2 });
     map.addImage(`pin-${c.id}-r`, pinImage(c.color, true), { pixelRatio: 2 });
   }
-  map.addSource('places', { type: 'geojson', data: placesGeoJSON() });
+  map.addSource('places', {
+    type: 'geojson', data: placesGeoJSON(),
+    attribution: 'Places: OpenStreetMap, <a href="https://overturemaps.org/">Overture Maps</a>'
+  });
   const pinLayout = {
     'icon-image': ['concat', 'pin-', ['get', 'c'], ['case', ['get', 'r'], '-r', '']],
     'icon-anchor': 'bottom',
@@ -609,6 +542,7 @@ function placeCard(p) {
   const actions = el('div', 'actions');
   actions.append(button(reviews.length ? 'Add another review' : 'Write a review', 'btn primary',
     () => openReview(p, null)));
+  if (p.custom) actions.append(button('Remove place', 'btn', () => removeYourPlace(p.custom)));
   card.append(actions);
 
   for (const r of reviews) {
@@ -632,10 +566,23 @@ function placeCard(p) {
   return card;
 }
 
+// Pan the map just enough to bring an open popup fully into view.
+function fitPopup() {
+  requestAnimationFrame(() => {
+    const node = popup.isOpen() && popup.getElement();
+    if (!node) return;
+    const box = node.getBoundingClientRect();
+    const below = box.bottom - window.innerHeight + 40; // clear of the attribution bar
+    const above = box.top - 12;
+    if (below > 0) map.panBy([0, Math.min(below, above)], { duration: reduceMotion ? 0 : 300 });
+    else if (above < 0) map.panBy([0, above], { duration: reduceMotion ? 0 : 300 });
+  });
+}
+
 function selectPlace(p, fly) {
-  setOrbit(false);
   popup.setLngLat([p.lng, p.lat]).setOffset(34).setDOMContent(placeCard(p)).addTo(map);
   popup.place = p;
+  if (!fly) fitPopup();
   if (fly) {
     goTo({ center: [p.lng, p.lat], zoom: Math.max(map.getZoom(), 16.5),
            pitch: map.getPitch(), bearing: map.getBearing() }, 1800);
@@ -718,7 +665,6 @@ map.on('moveend', () => {
 });
 
 document.getElementById('reset').addEventListener('click', () => {
-  setOrbit(false);
   popup.remove();
   goTo(HOME, 2500);
 });
@@ -732,7 +678,7 @@ const CAR_SPEED = [29, 22, 16, 14, 12, 10, 9]; // m/s by road class, motorway ->
 const CAR_COLORS = ['#d7263d', '#f4f4f2', '#1b1b1e', '#2e86de', '#9aa5b1', '#f6ae2d', '#2d6a4f', '#c0c5ce', '#7d1128'];
 const M_PER_LAT = 110540;
 const M_PER_LNG = 111320 * Math.cos(42.28 * Math.PI / 180);
-let carsOn = !reduceMotion;
+const carsOn = !reduceMotion; // cars stay parked for people who prefer reduced motion
 let road = null; // { nodes, rank, to: [[node...]], cls: [[class...]] }
 const cars = [];
 
@@ -749,9 +695,6 @@ fetch('roads.json').then((r) => r.json()).then((data) => {
   road = { nodes: data.nodes, rank: data.rank, to, cls };
   for (let i = 0; i < CAR_COUNT; i++) {
     cars.push({ color: CAR_COLORS[i % CAR_COLORS.length], pace: 0.8 + Math.random() * 0.4, live: false });
-  }
-  if (reduceMotion) {
-    document.querySelector('[data-toggle="cars"]').setAttribute('aria-pressed', 'false');
   }
   requestAnimationFrame(carFrame);
 }).catch((err) => console.warn('Cars unavailable:', err));
@@ -1059,104 +1002,177 @@ function interiorPoint(ring) {
 }
 
 // A building you named: its saved point lies inside this outline.
-function yourBuilding(poly, match) {
-  return userData.buildings.find((b) =>
-    inPairRing(b.lng, b.lat, poly[0]) || (match && inFlatRing(b.lng, b.lat, match.ring))) || null;
+function yourBuilding(ring) {
+  return userData.buildings.find((b) => inPairRing(b.lng, b.lat, ring)) || null;
+}
+
+// Food and bar places whose pin lies inside this outline.
+function placesInside(ring) {
+  const box = ringBox(ring);
+  return places.filter((p) => p.lng >= box.minX && p.lng <= box.maxX && p.lat >= box.minY &&
+    p.lat <= box.maxY && inPairRing(p.lng, p.lat, ring));
 }
 
 function describe(feature, poly) {
   const match = lookupBuilding(poly[0]);
-  const yours = yourBuilding(poly, match);
+  const ring = match ? pairsOf(match.ring) : poly[0];
+  const yours = yourBuilding(ring);
   const pieces = buildingPieces(feature, poly, match);
   const metres = match
     ? Math.max(...pieces.map((p) => p.h))
     : heightOf(feature) - baseOf(feature);
   let title = 'Unnamed building', kind = 'Building';
-  if (yours) { title = yours.name; kind = CAT[yours.kind] ? `${CAT[yours.kind].label} · named by you` : 'Named by you'; }
+  if (yours) { title = yours.name; kind = 'Named by you'; }
   else if (match) { title = match.label; kind = match.isName ? 'Building' : 'Address'; }
+  const here = placesInside(ring);
+  const height = `${Math.round(metres * 3.281)} ft · ${Math.round(metres)} m`;
   return {
-    pieces, match, yours, title, kind,
-    anchor: interiorPoint(match ? pairsOf(match.ring) : poly[0]),
-    height: `${Math.round(metres * 3.281)} ft · ${Math.round(metres)} m`,
+    pieces, match, ring, yours, title, kind, here, height,
+    anchor: interiorPoint(ring),
+    tipLine: here.length ? `${here.length} place${here.length > 1 ? 's' : ''} · ${height}` : height,
     estimated: feature.properties.render_height == null
   };
 }
 
-/* ---------- Naming buildings ---------- */
+/* ---------- Building card: places inside, adding places, naming ---------- */
 function buildingCard(info, lngLat) {
-  const card = el('div', 'popup');
+  const card = el('div', 'popup place');
   card.append(el('p', 'cat', info.kind), el('h2', '', info.title), el('p', 'big', info.height));
-  if (info.yours && CAT[info.yours.kind]) {
-    const p = places.find((x) => x.key === `custom:${info.yours.id}`);
-    if (p) {
-      const actions = el('div', 'actions');
-      const n = reviewsOf(p).length;
-      actions.append(button(n ? `Reviews (${n})` : 'Write a review', 'btn',
-        () => (n ? selectPlace(p, false) : openReview(p, null))));
-      card.append(actions);
+
+  if (info.here.length) {
+    card.append(el('p', 'section-label', `In this building (${info.here.length})`));
+    const list = el('ul', 'here-list');
+    for (const p of [...info.here].sort((a, b) => a.name.localeCompare(b.name))) {
+      const row = button('', '', () => selectPlace(p, false));
+      const dot = el('span', 'dot');
+      dot.style.background = CAT[p.cat].color;
+      const text = el('span', 'text');
+      text.append(el('span', 'name', p.name), el('span', 'kind', placeSummary(p)));
+      row.append(dot, text);
+      const item = el('li');
+      item.append(row);
+      list.append(item);
     }
+    card.append(list);
   }
-  card.append(nameForm(info, lngLat));
+  card.append(addPlaceForm(info, lngLat), nameForm(info, lngLat));
   return card;
 }
 
-function nameForm(info, lngLat) {
+const keepKeysOffMap = (form) => form.addEventListener('keydown', (e) => e.stopPropagation());
+
+function addPlaceForm(info, lngLat) {
   const form = el('form', 'name-form');
-  const nameField = el('label', 'field', info.yours ? 'Your name for it' : 'Name this building');
+  form.append(el('p', 'section-label',
+    info.here.length ? 'Add another restaurant or bar here' : 'Add a restaurant or bar here'));
   const input = el('input');
-  input.name = 'name';
   input.maxLength = 80;
   input.autocomplete = 'off';
-  input.placeholder = info.match && info.match.isName ? info.match.label : 'e.g. the restaurant inside';
-  input.value = info.yours ? info.yours.name : '';
-  nameField.append(input);
-
-  const kindField = el('label', 'field', 'What’s here?');
+  input.placeholder = 'Name';
+  input.setAttribute('aria-label', 'Name of the restaurant or bar');
   const select = el('select');
-  for (const [value, text] of [['', 'Just a name'], ['food', 'Restaurant / food'], ['bars', 'Bar']]) {
+  select.setAttribute('aria-label', 'Type');
+  for (const [value, text] of [['food', 'Restaurant / food'], ['bars', 'Bar']]) {
     const option = el('option', '', text);
     option.value = value;
     select.append(option);
   }
-  select.value = (info.yours && info.yours.kind) || '';
-  kindField.append(select);
-
-  const actions = el('div', 'actions');
-  const save = el('button', 'btn primary', info.yours ? 'Update' : 'Save name');
-  save.type = 'submit';
-  actions.append(save);
-  if (info.yours) actions.append(button('Remove', 'btn', () => removeYourBuilding(info.yours, lngLat)));
-  form.append(nameField, kindField, actions);
-
-  form.addEventListener('keydown', (e) => e.stopPropagation()); // don't let typing move the map
+  const add = el('button', 'btn primary', 'Add');
+  add.type = 'submit';
+  const row = el('div', 'add-row');
+  row.append(input, select, add);
+  form.append(row);
+  keepKeysOffMap(form);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = input.value.trim();
     if (!name) { input.focus(); return; }
-    saveYourBuilding(info, name, select.value || null, lngLat);
+    addYourPlace(info, name, select.value, lngLat);
   });
   return form;
 }
 
-function saveYourBuilding(info, name, kind, lngLat) {
+function nameForm(info, lngLat) {
+  const details = el('details', 'rename');
+  details.append(el('summary', '', info.yours ? 'Rename this building' : 'Name this building'));
+  const form = el('form', 'name-form');
+  const input = el('input');
+  input.maxLength = 80;
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', 'Building name');
+  input.placeholder = info.match && info.match.isName ? info.match.label : 'Building name';
+  input.value = info.yours ? info.yours.name : '';
+  const actions = el('div', 'actions');
+  const save = el('button', 'btn primary', info.yours ? 'Update' : 'Save name');
+  save.type = 'submit';
+  actions.append(save);
+  if (info.yours) actions.append(button('Remove name', 'btn', () => removeYourBuilding(info.yours, lngLat)));
+  form.append(input, actions);
+  details.append(form);
+  keepKeysOffMap(form);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    saveYourBuilding(info, name, lngLat);
+  });
+  return details;
+}
+
+// A spot inside the building for a new pin, a few metres clear of the pins already there.
+function freeSpot(ring, anchor, taken) {
+  const gap = 7; // metres
+  const ok = (x, y) => inPairRing(x, y, ring) && taken.every(([tx, ty]) =>
+    Math.hypot((tx - x) * M_PER_LNG, (ty - y) * M_PER_LAT) >= gap);
+  if (ok(anchor[0], anchor[1])) return anchor;
+  for (let r = gap; r <= 80; r += gap / 2) {
+    for (let k = 0; k < 12; k++) {
+      const a = (k * Math.PI) / 6;
+      const x = anchor[0] + (r * Math.cos(a)) / M_PER_LNG;
+      const y = anchor[1] + (r * Math.sin(a)) / M_PER_LAT;
+      if (ok(x, y)) return [x, y];
+    }
+  }
+  return anchor;
+}
+
+function addYourPlace(info, name, kind, lngLat) {
+  const [lng, lat] = freeSpot(info.ring, info.anchor, info.here.map((p) => [p.lng, p.lat]));
+  const now = new Date().toISOString();
+  userData.places.push({ id: newId(), name, kind, lng: +lng.toFixed(7), lat: +lat.toFixed(7),
+                         created: now, updated: now });
+  saveUserData(`Added “${name}”`);
+  afterBuildingChange(lngLat);
+  if (!active.has(kind)) setFilter(kind, true);
+}
+
+function removeYourPlace(b) {
+  const n = (userData.reviews[`custom:${b.id}`] || []).length;
+  const extra = n ? ` This also deletes your ${n} review${n > 1 ? 's' : ''} of it.` : '';
+  if (!confirm(`Remove “${b.name}” from the map?${extra}`)) return;
+  userData.places = userData.places.filter((x) => x !== b);
+  delete userData.reviews[`custom:${b.id}`];
+  saveUserData(`Removed “${b.name}”`);
+  popup.remove();
+  rebuildPlaces();
+  updateResults();
+}
+
+function saveYourBuilding(info, name, lngLat) {
   let b = info.yours;
   const now = new Date().toISOString();
   if (!b) {
     b = { id: newId(), lng: +info.anchor[0].toFixed(7), lat: +info.anchor[1].toFixed(7), created: now };
     userData.buildings.push(b);
   }
-  Object.assign(b, { name, kind, updated: now });
+  Object.assign(b, { name, updated: now });
   saveUserData(`Saved “${name}”`);
   afterBuildingChange(lngLat);
-  if (kind && !active.has(kind)) setFilter(kind, true);
 }
 
 function removeYourBuilding(b, lngLat) {
-  const n = (userData.reviews[`custom:${b.id}`] || []).length;
-  const extra = n ? ` This also deletes your ${n} review${n > 1 ? 's' : ''} of it.` : '';
-  if (!confirm(`Remove your name “${b.name}”?${extra}`)) return;
+  if (!confirm(`Remove your name “${b.name}” for this building?`)) return;
   userData.buildings = userData.buildings.filter((x) => x !== b);
-  delete userData.reviews[`custom:${b.id}`];
   saveUserData(`Removed “${b.name}”`);
   afterBuildingChange(lngLat);
 }
@@ -1170,6 +1186,7 @@ function afterBuildingChange(lngLat) {
   if (!feature) { popup.remove(); return; }
   const info = describe(feature, polygonUnderCursor(feature, { point, lngLat }));
   popup.setDOMContent(buildingCard(info, lngLat));
+  fitPopup();
 }
 
 let hoverKey = null;   // building currently highlighted
@@ -1244,7 +1261,7 @@ map.on('mousemove', (e) => {
       }))
     });
   }
-  showTip(e.point, info ? info.title : null, info ? info.height : null);
+  showTip(e.point, info ? info.title : null, info ? info.tipLine : null);
 });
 map.on('mouseout', clearHover);
 map.on('movestart', clearHover);
@@ -1257,6 +1274,7 @@ map.on('click', (e) => {
   const info = describe(feature, polygonUnderCursor(feature, e));
   popup.setLngLat(e.lngLat).setOffset(16).setDOMContent(buildingCard(info, e.lngLat)).addTo(map);
   popup.place = null;
+  fitPopup();
 });
 
 window.map = map; // handy for debugging in the console

@@ -2,6 +2,10 @@
 data/
 *.tmp
 
+# Raw Overture Maps download used by tools/add_overture_places.py
+*.geojsonseq
+*.geojsonseq.state
+
 # Claude Code local settings
 .claude/settings.local.json
 

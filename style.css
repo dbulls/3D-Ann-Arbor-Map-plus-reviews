@@ -94,40 +94,6 @@ h1 span { color: var(--maize); }
   overflow-y: auto;
 }
 
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 3px;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
-}
-.segmented button {
-  padding: 7px 0;
-  font-size: 13px;
-  font-weight: 600;
-  background: transparent;
-  border: 0;
-  border-radius: 7px;
-  color: var(--muted);
-}
-.segmented button.active { background: var(--maize); color: var(--blue); }
-
-.toggles { display: flex; flex-wrap: wrap; gap: 6px; }
-.toggles button {
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-}
-.toggles button[aria-pressed="true"] {
-  background: rgba(255, 203, 5, 0.14);
-  border-color: rgba(255, 203, 5, 0.55);
-  color: var(--maize);
-}
-
 section { display: flex; flex-direction: column; gap: 8px; flex: none; }
 .section {
   margin: 0;
@@ -383,7 +349,7 @@ section { display: flex; flex-direction: column; gap: 8px; flex: none; }
 .star-row input:focus-visible + label { outline: 2px solid var(--maize); outline-offset: 1px; border-radius: 4px; }
 
 /* ---------- Reviews and naming inside map popups ---------- */
-.popup.place { max-height: min(440px, 55vh); overflow-y: auto; }
+.popup.place { max-height: min(460px, 70vh); overflow-y: auto; overscroll-behavior: contain; }
 .popup .sub { margin-bottom: 2px; color: var(--muted); }
 .popup .rating-line { margin-top: 6px; color: var(--text); font-variant-numeric: tabular-nums; }
 .stars { color: var(--maize); letter-spacing: 1px; }
@@ -455,3 +421,54 @@ section { display: flex; flex-direction: column; gap: 8px; flex: none; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ---------- Building card: places inside, add a place, rename ---------- */
+.popup .section-label {
+  margin: 12px 0 6px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.name-form .section-label { margin: 0; }
+.here-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.here-list button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.here-list button:hover, .here-list button:focus-visible { background: rgba(255, 255, 255, 0.1); }
+.here-list .text { display: flex; flex-direction: column; min-width: 0; }
+.here-list .name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.here-list .kind { font-size: 11px; color: var(--muted); }
+
+.name-form input, .name-form select {
+  min-width: 0;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color-scheme: dark;
+}
+.name-form input::placeholder { color: #7f8fa3; }
+.name-form select option { background: #0c1a2e; }
+.add-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.add-row input { grid-column: 1 / -1; }
+
+.rename { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.rename summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.rename summary:hover { color: var(--text); }
+.rename .name-form { margin-top: 8px; padding-top: 0; border-top: 0; }

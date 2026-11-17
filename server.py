@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data" / "my-data.json"
 MAX_BYTES = 5_000_000
-EMPTY = {"version": 1, "reviews": {}, "buildings": []}
+EMPTY = {"version": 2, "reviews": {}, "places": [], "buildings": []}
 
 
 class Handler(SimpleHTTPRequestHandler):

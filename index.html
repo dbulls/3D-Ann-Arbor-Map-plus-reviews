@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ann Arbor in 3D</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <div id="map" aria-label="3D map of Ann Arbor, Michigan"></div>
@@ -22,20 +22,6 @@
     </header>
 
     <div id="panel-body">
-      <div class="segmented" role="group" aria-label="Lighting">
-        <button data-mode="day" class="active">Day</button>
-        <button data-mode="dusk">Dusk</button>
-        <button data-mode="night">Night</button>
-      </div>
-
-      <div class="toggles" role="group" aria-label="Layers">
-        <button data-toggle="buildings" aria-pressed="true">3D buildings</button>
-        <button data-toggle="terrain" aria-pressed="true">Terrain</button>
-        <button data-toggle="labels" aria-pressed="true">Labels</button>
-        <button data-toggle="cars" aria-pressed="true">Cars</button>
-        <button data-toggle="orbit" aria-pressed="false">Orbit</button>
-      </div>
-
       <section>
         <h2 class="section">Find places</h2>
         <div id="filters" class="filters" role="group" aria-label="Place categories"></div>
@@ -50,7 +36,7 @@
         <p id="results-empty">Pick a category to drop pins on the map.</p>
       </section>
 
-      <p class="hint">Drag to pan · right-drag or ctrl-drag to tilt and rotate · scroll to zoom · click a pin to review it · click a building to name it</p>
+      <p class="hint">Drag to pan · right-drag or ctrl-drag to tilt and rotate · scroll to zoom · click a pin to review it · click a building to add the places inside</p>
     </div>
   </aside>
 
@@ -96,6 +82,6 @@
   </dialog>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
