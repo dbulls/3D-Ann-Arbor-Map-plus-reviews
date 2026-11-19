@@ -6,8 +6,8 @@ An interactive 3D map of Ann Arbor, Michigan, for keeping track of restaurants a
 
 - **3D city**: buildings extruded to their real heights, with terrain relief along the Huron River valley.
 - **Building names**: hover over a building to see its name or address.
-- **Food and bar filters**: pins for about 750 restaurants and cafés and 75 bars, plus a list of the places currently on screen.
-- **Reviews**: click a pin to rate it from 1 to 5 stars and write notes on food, atmosphere and service. You can leave several reviews for one place, and edit or delete them later. Places you've reviewed get a gold star, and the **My reviews** filter shows only those.
+- **Food and bar filters**: pins for about 530 local restaurants and cafés and 75 bars, plus a list of the places currently on screen. Fast food and chain restaurants are left out (the lists are in `app.js`). The expand button makes the panel bigger so the list shows more places.
+- **Reviews**: click a pin to rate it from 1 to 5 stars, give it a price from $ to $$$$, and write notes on food, atmosphere and service. You can leave several reviews for one place, and edit or delete them later. Places you've reviewed get a gold star, and the **My reviews** filter shows only those.
 - **Buildings with several places**: click any building to see every restaurant and bar inside it. You can add places the map is missing (as many per building as you like) and review them like any other, or give the building a name of your own.
 - **Traffic**: cars drive along the real street network.
 

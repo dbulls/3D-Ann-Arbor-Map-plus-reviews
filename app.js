@@ -269,6 +269,43 @@ const CATEGORIES = [
 ];
 const FOLD = { coffee: 'food' }; // cafés are listed under Food
 const REVIEWED = 'reviewed';     // the "My reviews" filter
+
+// Fast food is left off the map: anything tagged "Fast food" (except campus
+// dining halls) plus the quick-service chains, which the data often tags by
+// cuisine instead (McDonald's as "Burger", Subway as "Sandwich", ...).
+const FAST_FOOD_CHAINS = new RegExp('^(' + [
+  "mcdonald'?s", 'burger king', "wendy'?s", 'white castle', "culver'?s", 'five guys',
+  'shake shack', "steak 'n shake", 'burgerfi', 'chick-fil-a', 'kfc', "raising cane'?s",
+  'popeyes', 'wingstop', 'wing snob', "it'?s just wings", 'taco bell', 'chipotle', 'qdoba',
+  "moe'?s southwest", 'pancheros', 'subway', "jimmy john'?s", "jersey mike'?s", 'potbelly',
+  'firehouse subs', 'which wich', 'blimpie', 'panera', 'panda express', "arby'?s",
+  "domino'?s", 'dominos', "papa john'?s", 'little caesars', "hungry howie'?s", "jet'?s pizza",
+  "marco'?s pizza", 'pizza hut', "happy'?s pizza", "dunkin'?", 'tim hortons', 'dairy queen',
+  "auntie anne'?s", 'cinnabon', 'einstein bros', 'noodles & company', 'blaze pizza',
+  'tropical smoothie', 'earl of sandwich', 'great wraps'
+].join('|') + ')', 'i');
+
+// Chain restaurants, cafés and dessert shops (national or with many Michigan
+// locations) are left off too, so the map shows local places.
+const CHAINS = new RegExp('^(' + [
+  "applebee'?s", "bennigan'?s", 'bob evans', "chili'?s", "denny'?s", 'ihop', 'first watch',
+  'olive garden', 'outback', 'red lobster', 'red robin', "joe'?s crab shack", 'texas roadhouse',
+  'texas de brazil', "ruth'?s chris", 'p\\.?f\\.? chang', 'california pizza kitchen',
+  'buffalo wild wings', 'bonchon', 'bb\\.q chicken', 'k-pot', "dickey'?s", 'condado',
+  'corelife', 'sweetgreen', 'piada', 'pieology', 'the pita pit', "smoke'?s poutinerie",
+  "olga'?s", "anna'?s house", "buddy'?s pizza", 'cottage inn', "mancino'?s", "toarmina'?s",
+  'starbucks', "peet'?s", 'biggby', "bruegger'?s", 'great harvest', 'honey ?baked ham',
+  'tous les jours', 'toastique', 'jamba', 'smoothie king', 'playa bowls',
+  'baskin', 'ben & jerry', 'cold stone', "dippin'? dots", 'tcby', 'pinkberry', "menchie'?s",
+  'crumbl', 'insomnia cookies', 'mrs\\.? fields', 'nothing bundt', 'rocket fizz',
+  'sharetea', 'ding tea', 'coco fresh', 'möge tee', 'quickly$'
+].join('|') + ')', 'i');
+
+// Fast food and chains are hidden from the Food filter
+const isHiddenFood = (name, kind) => {
+  const n = name.replace(/’/g, "'");
+  return (kind === 'Fast food' && !/dining hall/i.test(n)) || FAST_FOOD_CHAINS.test(n) || CHAINS.test(n);
+};
 const CAT = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
 const MAX_RESULTS = 150;
 
@@ -304,6 +341,19 @@ function averageStars(p) {
   return list.length ? list.reduce((sum, r) => sum + r.stars, 0) / list.length : 0;
 }
 const starString = (n) => '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n));
+
+// Price is optional on each review: 1-4, shown as $ to $$$$. A place's price
+// is the rounded average of the reviews that set one.
+const PRICE_WORDS = ['', 'cheap', 'moderate', 'pricey', 'a splurge'];
+function averagePrice(p) {
+  const priced = reviewsOf(p).filter((r) => r.price);
+  return priced.length ? Math.round(priced.reduce((sum, r) => sum + r.price, 0) / priced.length) : 0;
+}
+function priceTag(n) {
+  const tag = el('span', 'price', '$'.repeat(n));
+  tag.title = `Price: ${PRICE_WORDS[n]}`;
+  return tag;
+}
 
 // A teardrop map pin in the category's colour, drawn at 2x for sharp rendering.
 // Places you have reviewed get a star instead of a dot.
@@ -368,6 +418,7 @@ const placesData = fetch('places.json').then((r) => r.json());
 Promise.all([placesData, mapLoaded, userDataReady]).then(([data]) => {
   for (const [name, c, kind, lng, lat] of data.places) {
     const cat = FOLD[data.categories[c]] || data.categories[c];
+    if (cat === 'food' && isHiddenFood(name, kind)) continue;
     if (CAT[cat]) basePlaces.push({ name, cat, kind, lng, lat, key: placeKey(name, lng, lat) });
   }
   rebuildPlaces();
@@ -488,6 +539,7 @@ function updateResults() {
     dot.style.background = CAT[p.cat].color;
     const text = el('span', 'text');
     const sub = el('span', 'kind', placeKind(p));
+    if (averagePrice(p)) sub.prepend(priceTag(averagePrice(p)), ' · ');
     if (reviewsOf(p).length) sub.prepend(el('span', 'rating', `★ ${averageStars(p).toFixed(1)}`), ' · ');
     text.append(el('span', 'name', p.name), sub);
     row.append(dot, text);
@@ -527,6 +579,7 @@ function placeCard(p) {
     const line = el('p', 'rating-line');
     line.append(el('span', 'stars', starString(averageStars(p))),
       ` ${averageStars(p).toFixed(1)} · ${reviews.length} review${reviews.length > 1 ? 's' : ''}`);
+    if (averagePrice(p)) line.append(' · ', priceTag(averagePrice(p)));
     card.append(line);
   }
   const actions = el('div', 'actions');
@@ -540,7 +593,10 @@ function placeCard(p) {
     const head = el('div', 'review-head');
     const stars = el('span', 'stars', starString(r.stars));
     stars.setAttribute('aria-label', `${r.stars} out of 5 stars`);
-    head.append(stars, el('span', 'date', formatDate(r.visited || r.created)));
+    const left = el('span', 'review-score');
+    left.append(stars);
+    if (r.price) left.append(' ', priceTag(r.price));
+    head.append(left, el('span', 'date', formatDate(r.visited || r.created)));
     box.append(head);
     const list = el('dl');
     for (const [field, label] of [['food', 'Food'], ['atmosphere', 'Atmosphere'], ['service', 'Service']]) {
@@ -593,6 +649,7 @@ function openReview(place, review) {
   const f = reviewForm.elements;
   if (review) {
     reviewForm.querySelector(`input[name="stars"][value="${review.stars}"]`).checked = true;
+    if (review.price) reviewForm.querySelector(`input[name="price"][value="${review.price}"]`).checked = true;
     f.visited.value = review.visited || '';
     f.food.value = review.food || '';
     f.atmosphere.value = review.atmosphere || '';
@@ -619,6 +676,7 @@ reviewForm.addEventListener('submit', (e) => {
   const entry = review || { id: newId(), created: now };
   Object.assign(entry, {
     stars,
+    price: Number(new FormData(reviewForm).get('price')) || 0,
     visited: f.visited.value,
     food: f.food.value.trim(),
     atmosphere: f.atmosphere.value.trim(),
@@ -632,6 +690,16 @@ reviewForm.addEventListener('submit', (e) => {
   afterReviewChange(place);
 });
 document.getElementById('review-cancel').addEventListener('click', () => reviewDialog.close());
+
+// Price is optional, so clicking the chosen price again clears it.
+for (const input of reviewForm.querySelectorAll('input[name="price"]')) {
+  const label = reviewForm.querySelector(`label[for="${input.id}"]`);
+  label.addEventListener('pointerdown', () => { input.dataset.was = String(input.checked); });
+  label.addEventListener('click', (e) => {
+    if (input.dataset.was === 'true') { e.preventDefault(); input.checked = false; }
+    delete input.dataset.was;
+  });
+}
 
 function deleteReview(place, review) {
   if (!confirm(`Delete your ${review.stars}-star review of ${place.name}?`)) return;
@@ -807,6 +875,12 @@ const collapseBtn = document.getElementById('collapse');
 collapseBtn.addEventListener('click', () => {
   const collapsed = panel.classList.toggle('collapsed');
   collapseBtn.setAttribute('aria-expanded', String(!collapsed));
+});
+const expandBtn = document.getElementById('expand');
+expandBtn.addEventListener('click', () => {
+  const expanded = panel.classList.toggle('expanded');
+  expandBtn.setAttribute('aria-pressed', String(expanded));
+  expandBtn.title = expanded ? 'Make the panel smaller' : 'Make the panel bigger';
 });
 
 /* ---------- Building names (buildings.json, built from OpenStreetMap) ---------- */

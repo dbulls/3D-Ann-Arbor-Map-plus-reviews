@@ -5,6 +5,7 @@
   --line: rgba(255, 255, 255, 0.12);
   --text: #eef2f7;
   --muted: #9fb0c4;
+  --price: #5fd39a;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
 }
 
@@ -70,7 +71,8 @@ h1 {
 }
 h1 span { color: var(--maize); }
 
-#collapse {
+.panel-buttons { display: flex; gap: 6px; flex: none; }
+.panel-btn {
   flex: none;
   width: 32px;
   height: 32px;
@@ -82,8 +84,17 @@ h1 span { color: var(--maize); }
   color: var(--muted);
   transition: transform 0.2s;
 }
+.panel-btn:hover, .panel-btn:focus-visible { color: var(--text, #fff); }
 #panel.collapsed #collapse { transform: rotate(180deg); }
 #panel.collapsed #panel-body { display: none; }
+#panel.collapsed #expand { display: none; }
+
+/* Expanded: a wider panel that uses the full height, so the list shows more places */
+#expand .shrink { display: none; }
+#panel.expanded #expand .grow { display: none; }
+#panel.expanded #expand .shrink { display: block; }
+#panel.expanded { width: min(480px, calc(100% - 96px)); height: calc(100% - 32px); }
+#panel.expanded #panel-body { flex: 1 1 auto; }
 
 #panel-body {
   display: flex;
@@ -348,6 +359,29 @@ section { display: flex; flex-direction: column; gap: 8px; flex: none; }
 .star-row label:hover, .star-row label:hover ~ label { color: var(--maize); }
 .star-row input:focus-visible + label { outline: 2px solid var(--maize); outline-offset: 1px; border-radius: 4px; }
 
+/* Price picker: $ to $$$$, optional */
+.optional { margin-left: 4px; font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+legend.field:has(.optional) { flex-direction: row; align-items: baseline; gap: 0; }
+.price-row { display: flex; gap: 6px; }
+.price-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.price-row label {
+  min-width: 56px;
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.price-row label:hover { color: var(--text); }
+.price-row input:checked + label { color: #10241a; background: var(--price); border-color: var(--price); }
+.price-row input:focus-visible + label { outline: 2px solid var(--maize); outline-offset: 1px; }
+.price-help { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+.price { color: var(--price); font-weight: 700; letter-spacing: 1px; }
+
 /* ---------- Reviews and naming inside map popups ---------- */
 .popup.place { max-height: min(460px, 70vh); overflow-y: auto; overscroll-behavior: contain; }
 .popup .sub { margin-bottom: 2px; color: var(--muted); }
@@ -412,6 +446,7 @@ section { display: flex; flex-direction: column; gap: 8px; flex: none; }
     width: auto;
     max-height: 52%;
   }
+  #panel.expanded { width: auto; height: 85%; max-height: 85%; }
   #panel header { padding: 12px 14px 10px; }
   h1 { font-size: 20px; }
   .hint { display: none; }

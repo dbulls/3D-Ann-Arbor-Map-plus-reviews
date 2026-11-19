@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ann Arbor in 3D</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
   <div id="map" aria-label="3D map of Ann Arbor, Michigan"></div>
@@ -16,9 +16,15 @@
         <p class="eyebrow">Michigan · 42.28°N 83.74°W</p>
         <h1>Ann Arbor <span>in 3D</span></h1>
       </div>
-      <button id="collapse" aria-expanded="true" aria-controls="panel-body" title="Show or hide panel">
-        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <div class="panel-buttons">
+        <button id="expand" class="panel-btn" aria-pressed="false" title="Make the panel bigger">
+          <svg class="grow" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M9.5 2.5H13.5V6.5M13.5 2.5L9 7M6.5 13.5H2.5V9.5M2.5 13.5L7 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="shrink" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13.5 6.5H9.5V2.5M9.5 6.5L14 2M2.5 9.5H6.5V13.5M6.5 9.5L2 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="collapse" class="panel-btn" aria-expanded="true" aria-controls="panel-body" title="Show or hide panel">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </header>
 
     <div id="panel-body">
@@ -61,6 +67,17 @@
         <p id="review-error" class="error" hidden>Pick a star rating.</p>
       </fieldset>
 
+      <fieldset>
+        <legend class="field">Price <span class="optional">optional</span></legend>
+        <div class="price-row">
+          <input type="radio" name="price" value="1" id="price-1"><label for="price-1" title="Cheap: under $15 a person">$</label>
+          <input type="radio" name="price" value="2" id="price-2"><label for="price-2" title="Moderate: $15–30 a person">$$</label>
+          <input type="radio" name="price" value="3" id="price-3"><label for="price-3" title="Pricey: $30–60 a person">$$$</label>
+          <input type="radio" name="price" value="4" id="price-4"><label for="price-4" title="Splurge: over $60 a person">$$$$</label>
+        </div>
+        <p class="price-help" id="price-help">How much per person? Click again to clear.</p>
+      </fieldset>
+
       <label class="field">Visited
         <input type="date" name="visited">
       </label>
@@ -82,6 +99,6 @@
   </dialog>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
